@@ -1,10 +1,12 @@
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
-from employee_information.models import Department, Position, Employees
+from employee_information.models import Department, Position, Employees, Task,Feedback
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 import json
+from django.shortcuts import render  
+from django.http import HttpResponse  
 employees = [
 
     {
@@ -23,7 +25,7 @@ employees = [
 # Login
 def login_user(request):
     logout(request)
-    resp = {"status":'failed','msg':''}
+    resp = {"status":'failed','msg':'','isadmin':False}
     username = ''
     password = ''
     if request.POST:
@@ -33,6 +35,10 @@ def login_user(request):
         user = authenticate(username=username, password=password)
         if user is not None:
             if user.is_active:
+                if username=="admin":
+                    setcookie(request,isadmin=True)
+                else:
+                    setcookie(request,isadmin=False)
                 login(request, user)
                 resp['status']='success'
             else:
@@ -40,6 +46,16 @@ def login_user(request):
         else:
             resp['msg'] = "Incorrect username or password"
     return HttpResponse(json.dumps(resp),content_type='application/json')
+
+#cookies
+def setcookie(request,isadmin):  
+    response = HttpResponse("Cookie Set")  
+    response.set_cookie('isadmin', isadmin)  
+    return response  
+def getcookie(request):  
+    isadmin = request.COOKIES['isadmin']  
+    return HttpResponse("isadmin@:"+ isadmin);  
+
 
 #Logout
 def logoutuser(request):
@@ -255,3 +271,145 @@ def view_employee(request):
         'positions' : positions
     }
     return render(request, 'employee_information/view_employee.html',context)
+
+
+#Tasks
+@login_required
+def task(request):
+    Task_list= Task.objects.all()
+    context = {
+        'page_title':'Task',
+        'tasks':Task_list,
+    }
+    return render(request, 'employee_information/task.html',context)
+
+@login_required
+def manage_task(request):
+    task = {}
+    employees = Employees.objects.filter().all() 
+    
+    if request.method == 'GET':
+        data =  request.GET
+        id = ''
+        if 'id' in data:
+            id= data['id']
+        if id.isnumeric() and int(id) > 0:
+            task = Task.objects.filter(id=id).first()
+    context = {
+        'task':task,
+        'employees':employees
+        
+    }
+    return render(request, 'employee_information/manage_task.html',context)
+
+
+@login_required
+def save_task(request):
+    data =  request.POST
+    resp = {'status':'failed'}
+    print(data)
+    
+
+    try:
+            employee = Employees.objects.filter(id=data['employee_id']).first()
+            print("employee",employee)
+            print(data)
+            if (data['id']).isnumeric() and int(data['id']) > 0 :
+                print(data)
+                save_task = Task.objects.filter(id = data['id']).update(taskname=data['taskname'],taskdescription=data['taskdescription'],employee_id=employee,taskdeadline=data['taskdeadline'],taskprogress=data['taskprogress'])
+            else:
+                print("else exec")
+                save_task = Task( taskname=data['taskname'],taskdescription=data['taskdescription'],employee_id=employee,taskdeadline=data['taskdeadline'],taskprogress=data['taskprogress'])
+                print(save_task)
+                save_task.save()
+            
+            resp['status'] = 'success'
+    except Exception:
+            resp['status'] = 'failed'
+            print(Exception)
+            print(json.dumps({ "taskname":data['taskname'],"taskdescription":data['taskdescription'],"taskdeadline":data['taskdeadline'],"taskprogress":data['taskprogress']}))
+    return HttpResponse(json.dumps(resp), content_type="application/json")
+
+@login_required
+def delete_task(request):
+    data =  request.POST
+    print(data)
+    resp = {'status':''}
+    try:
+        Task.objects.filter(id = data['id']).delete()
+        resp['status'] = 'success'
+    except:
+        resp['status'] = 'failed'
+    return HttpResponse(json.dumps(resp), content_type="application/json")
+
+#feedback
+@login_required
+def feedback(request):
+    feedback_list = Feedback.objects.all()
+    context = {
+        'page_title':'Feedback',
+        'feedbacks':feedback_list,
+    }
+    return render(request, 'employee_information/feedback.html',context)
+
+
+@login_required
+def manage_feedback(request):
+    feedback = {}
+    employees = Employees.objects.filter().all() 
+    tasks= Task.objects.filter().all() 
+    print(employees)
+    if request.method == 'GET':
+        data =  request.GET
+        id = ''
+        if 'id' in data:
+            id= data['id']
+        if id.isnumeric() and int(id) > 0:
+            feedback = Feedback.objects.filter(id=id).first()
+    context = {
+        'feedback':feedback,
+        'employees':employees,
+        'tasks':tasks
+        
+        
+    }
+    return render(request, 'employee_information/manage_feedback.html',context)
+
+@login_required
+def save_feedback(request):
+    data =  request.POST
+    resp = {'status':'failed'}
+    print(data)
+    
+    try:
+            employee = Employees.objects.filter(id=data['employee_id']).first()
+            
+            task=Task.objects.filter(id=data['task_id']).first()
+            
+            print(employee,task)
+            if (data['id']).isnumeric() and int(data['id']) > 0 :
+                save_feedback = Feedback.objects.filter(id = data['id']).update(title=data['title'], feedback = data['feedback'],suggestions = data['suggestion'],employee_id = employee,task_id = task)
+            else:
+                print("elsse exec")
+                save_feedback = Feedback( title=data['title'], feedback = data['feedback'],suggestions = data['suggestion'],employee_id = employee,task_id = task)
+                print(save_feedback)
+                save_feedback.save()
+
+            resp['status'] = 'success'
+    except Exception:
+            resp['status'] = 'failed'
+            print(Exception)
+            # print(json.dumps({"code":data['code'], "taskname":data['taskname'],"taskdescription":data['taskdescription'],"employee_id":employee,"taskdeadline":data['taskdeadline'],"taskprogress":data['taskprogress'],"taskcreated":data['taskcreated']}))
+    return HttpResponse(json.dumps(resp), content_type="application/json")
+
+@login_required
+def delete_feedback(request):
+    data =  request.POST
+    print(data)
+    resp = {'status':''}
+    try:
+        Feedback.objects.filter(id = data['id']).delete()
+        resp['status'] = 'success'
+    except:
+        resp['status'] = 'failed'
+    return HttpResponse(json.dumps(resp), content_type="application/json")

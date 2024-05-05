@@ -25,7 +25,7 @@ class Position(models.Model):
 
 
 class Employees(models.Model):
-    code = models.CharField(max_length=100,blank=True) 
+    code = models.CharField(max_length=100,blank=True)
     firstname = models.TextField() 
     middlename = models.TextField(blank=True,null= True) 
     lastname = models.TextField() 
@@ -44,3 +44,29 @@ class Employees(models.Model):
 
     def __str__(self):
         return self.firstname + ' ' +self.middlename + ' '+self.lastname + ' '
+    
+
+class Task(models.Model):
+    employee_id=models.ForeignKey(Employees,on_delete=models.CASCADE)
+    taskname=models.TextField()
+    taskdeadline=models.DateTimeField()
+    taskprogress=models.TextField()
+    
+    taskdescription=models.TextField()
+    
+    def __str__(self):
+        return self.taskname
+
+class Feedback(models.Model):
+    title=models.TextField()
+    feedback=models.TextField()
+    suggestions=models.TextField()
+    employee_id=models.ForeignKey(Employees,on_delete=models.CASCADE)
+    task_id=models.ForeignKey(Task,on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+
+
+    

@@ -1,0 +1,107 @@
+<div class="container-fluid">
+    <form action="" id="feedback-form">
+        <input type="hidden" name="id" value="{% if feedback.pk %}{{feedback.pk}}{% endif %}">
+        <div class="form-group mb-3">
+            <label for="name" class="control-label">Title</label>
+            <input type="text" name="title" id="title" class="form-control form-control-sm rounded-0" value="{% if feedback.title %}{{feedback.title}}{% endif %}" required>
+        </div>
+       
+        <div class="form-group mb-3">
+            <label for="description" class="control-label">Feedback</label>
+            <textarea rows="5" name="feedback" id="feedback" class="form-control form-control-sm rounded-0" required>{% if feedback.feedback %}{{feedback.feedback}}{% endif %}</textarea>
+        </div>
+         <div class="form-group mb-3">
+            <label for="description" class="control-label">Suggestion</label>
+            <textarea rows="5" name="suggestion" id="suggestion" class="form-control form-control-sm rounded-0" required>{% if feedback.suggestion %}{{feedback.suggestion}}{% endif %}</textarea>
+        </div>
+        <div class="form-group mb-3">
+                    <label for="employee_id" class="control-label">Employee</label>
+                    <select name="employee_id" id="employee_id" class="form-select form-select-sm rounded-0" required>
+                        {% if not feedback.employee_id %}
+                        <option value="1" disabled selected>Please Select Here</option>
+                        {% else %}
+                        <option value="1" disabled>Please Select Here</option>
+                        {% endif %}
+                        {% for employee in employees %}
+                            {% if feedback.employee_id and feedback.employee_id == employee.id %}
+                            <option value="{{ employee.id }}" selected>{{ employee.firstname }}</option>
+                            {% else %}
+                            <option value="{{ employee.id }}">{{ employee.firstname }}</option>
+                            {% endif %}
+                        {% endfor %}
+
+                    </select>
+                </div>
+                 <div class="form-group mb-3">
+                    <label for="employee_id" class="control-label">Task</label>
+                    <select name="task_id" id="task_id" class="form-select form-select-sm rounded-0" required>
+                        {% if not feedback.task_id %}
+                        <option value="1" disabled selected>Please Select Here</option>
+                        {% else %}
+                        <option value="1" disabled>Please Select Here</option>
+                        {% endif %}
+                        {% for task in tasks %}
+                            {% if feedback.task_id and feedback.task_id == task.id %}
+                            <option value="{{ task.id }}" selected>{{ task.taskname }}</option>
+                            {% else %}
+                            <option value="{{task.id }}">{{ task.taskname }}</option>
+                            {% endif %}
+                        {% endfor %}
+
+                    </select>
+                </div>
+        
+        
+    </form>
+</div>
+<script>
+    $(function() {
+        $('#feedback-form').submit(function(e) {
+            e.preventDefault();
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                headers: {
+                    "X-CSRFToken": '{{csrf_token}}'
+                },
+                url: "{% url 'save-feedback-page' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert_toast("An error occured", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.text(resp.msg)
+                    } else {
+                        el.text("An error occured", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
+</script>

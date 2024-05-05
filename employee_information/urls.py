@@ -24,4 +24,13 @@ urlpatterns = [
     path('save_employee', views.save_employee, name="save-employee-page"),
     path('delete_employee', views.delete_employee, name="delete-employee"),
     path('view_employee', views.view_employee, name="view-employee-page"),
+    path('task',views.task,name="task-page"),
+    path('manage_task',views.manage_task,name="manage_task-page"),
+    path('save_task',views.save_task,name="save-task-page"),
+    path('delete_task',views.delete_task,name="delete-task"),
+    path('feedback',views.feedback,name="feedback-page"),
+    path('manage_feedback',views.manage_feedback,name="manage_feedback-page"),
+    path('save_feedback',views.save_feedback,name="save-feedback-page"),
+    path('delete_feedback',views.delete_feedback,name="delete-feedback")
+
 ]
